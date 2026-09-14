@@ -1,0 +1,138 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Ousman ERP — Global Responsive Table System
+   Strategy: horizontal scroll on ALL screen sizes — NO columns hidden ever.
+   Every table wrapper gets overflow-x: auto. Min-widths ensure headers
+   stay aligned with cells and nothing collapses below readable width.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Base: every table wrapper scrolls horizontally ───────────────────── */
+[class*="-table-wrap"] {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scroll-behavior: smooth;
+  /* Prevent the wrapper itself from shrinking below its table */
+  min-width: 0;
+}
+
+/* ── 2. Scrollbar: thin and unobtrusive ──────────────────────────────────── */
+[class*="-table-wrap"]::-webkit-scrollbar        { height: 5px; }
+[class*="-table-wrap"]::-webkit-scrollbar-track  { background: transparent; }
+[class*="-table-wrap"]::-webkit-scrollbar-thumb  {
+  background: rgba(0,0,0,.18);
+  border-radius: 4px;
+}
+.abk-dark [class*="-table-wrap"]::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.15);
+}
+
+/* ── 3. Tables fill their wrapper; scroll kicks in when content is wider ──── */
+[class*="-table-wrap"] {
+  width: 100% !important;
+  display: block !important;
+  /* No overflow:hidden on the card — that clips the scrollbar */
+}
+[class*="-table-wrap"] table {
+  /* Fill the wrapper on desktop; min-width triggers horizontal scroll when needed */
+  width: 100% !important;
+  min-width: max-content !important;
+  table-layout: auto !important;
+  border-collapse: collapse;
+}
+
+/* ── 4. Per-table minimum widths (based on column count × min col width) ─── */
+
+/* Products: 8 cols (Name, SKU, Category, Price, Cost, Stock, Status, Actions) */
+.abk-prod-table-wrap table  { min-width: 820px !important; }
+
+/* Sales: 7 cols (Date/Time, Product, Customer, Qty, Unit Price, Total, Actions) */
+.abk-sales-table-wrap table { min-width: 760px !important; }
+
+/* Stock History: 9 cols (Date, Product, Type, Change, Before, After, Reason, User, Actions) */
+.abk-stk-table-wrap table   { min-width: 900px !important; }
+
+/* User Access: 5 cols (Name/Email, Role, Status, Last Login, Actions) */
+.abk-usr-table-wrap table   { min-width: 600px !important; }
+
+/* Finance period comparison table */
+.abk-fin-table-wrap.abk-fin-scroll-table table { min-width: 560px !important; }
+
+/* Finance expenses table */
+.abk-fin-table-wrap.abk-fin-stack-table table  { min-width: 700px !important; }
+
+/* ── 5. Headers: always nowrap so they stay on one line ──────────────────── */
+[class*="-table-wrap"] th {
+  white-space: nowrap !important;
+}
+
+/* ── 6. Data cells: allow wrap but enforce minimum widths ────────────────── */
+[class*="-table-wrap"] td {
+  /* Cells can wrap naturally — no forced nowrap that would widen columns */
+  word-break: break-word;
+  /* Prevent any cell from going too narrow */
+  min-width: 60px;
+}
+
+/* Action buttons column: never wrap, fixed minimum */
+[class*="-table-wrap"] td:last-child,
+[class*="-table-wrap"] th:last-child {
+  min-width: 80px !important;
+  white-space: nowrap !important;
+}
+
+/* ── 7. Tablet (≤ 1023px): tighter padding, same all columns ─────────────── */
+@media (max-width: 1023px) {
+  [class*="-table-wrap"] th {
+    padding: 9px 10px !important;
+    font-size: 9.5px !important;
+    letter-spacing: 0.07em !important;
+  }
+  [class*="-table-wrap"] td {
+    padding: 9px 10px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* ── 8. Phone (≤ 767px): further tighten padding — NO columns hidden ─────── */
+@media (max-width: 767px) {
+  [class*="-table-wrap"] th {
+    padding: 8px 8px !important;
+    font-size: 9px !important;
+    letter-spacing: 0.06em !important;
+  }
+  [class*="-table-wrap"] td {
+    padding: 8px 8px !important;
+    font-size: 11px !important;
+  }
+
+  /* Action buttons: keep them compact but tappable */
+  [class*="-table-wrap"] .abk-btn-icon {
+    width: 26px !important;
+    height: 26px !important;
+  }
+}
+
+/* ── 9. Small phones (≤ 480px): minimal padding — still NO hiding ─────────── */
+@media (max-width: 480px) {
+  [class*="-table-wrap"] th {
+    padding: 7px 7px !important;
+    font-size: 8.5px !important;
+  }
+  [class*="-table-wrap"] td {
+    padding: 7px 7px !important;
+    font-size: 10.5px !important;
+  }
+}
+
+/* ── 10. Prevent iOS zoom on input focus ─────────────────────────────────── */
+@media (max-width: 767px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+
+/* ── 11. Pagination bar: stack on very small screens ─────────────────────── */
+@media (max-width: 480px) {
+  [class*="-page-bar"] {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+}

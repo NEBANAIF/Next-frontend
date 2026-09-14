@@ -1,0 +1,694 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   STOKIO ERP — Global Design System
+   Single source of truth for all shared styles, tokens, and responsive rules
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
+
+/* ── 1. CSS Custom Properties (Design Tokens) ────────────────────────────── */
+:root {
+  /* Brand palette — light mode */
+  --abk-cream:         #F0F7E2;
+  --abk-cream-deep:    #E4F0CF;
+  --abk-ink:           #0F1F04;
+  --abk-ink-mid:       #3A5220;
+  --abk-ink-light:     #6A8A4A;
+  --abk-ink-faint:     #A8C080;
+  --abk-border:        #D0E4B0;
+  --abk-border-light:  #E2EFC8;
+  --abk-card:          #FFFFFF;
+  --abk-card-hover:    #F3FAE6;
+
+  /* Accent palette */
+  --abk-green:         #1D9E75;
+  --abk-green-bg:      #E1F5EE;
+  --abk-blue:          #185FA5;
+  --abk-blue-bg:       #E6F1FB;
+  --abk-purple:        #534AB7;
+  --abk-purple-bg:     #EEEDFE;
+  --abk-amber:         #854F0B;
+  --abk-amber-bg:      #FAEEDA;
+  --abk-red:           #C53030;
+  --abk-red-bg:        #FCEBEB;
+  --abk-red-border:    #F7C1C1;
+  --abk-red-text:      #791F1F;
+
+  /* Sidebar / ticker */
+  --abk-ticker-bg:     #0F1F04;
+  --abk-ticker-fg:     #F0F7E2;
+  --abk-texture-col:   #C8DCA8;
+
+  /* Nav states */
+  --abk-nav-active-bg:  #0F1F04;
+  --abk-nav-active-fg:  #F0F7E2;
+  --abk-nav-active-acc: #1D9E75;
+  --abk-nav-idle-fg:    #6A8A4A;
+  --abk-nav-hover-bg:   #E4F0CF;
+  --abk-nav-hover-fg:   #0F1F04;
+
+  /* Typography */
+  --abk-font-sans:   'DM Sans', system-ui, sans-serif;
+  --abk-font-serif:  'Playfair Display', Georgia, serif;
+
+  /* Spacing scale */
+  --abk-sidebar-w:   252px;
+  --abk-radius-sm:   8px;
+  --abk-radius-md:   12px;
+  --abk-radius-lg:   16px;
+  --abk-radius-xl:   20px;
+
+  /* Shadows */
+  --abk-shadow-sm:   0 1px 4px rgba(0,0,0,.06);
+  --abk-shadow-md:   0 2px 12px rgba(0,0,0,.08);
+  --abk-shadow-lg:   0 8px 32px rgba(0,0,0,.12);
+
+  /* Transitions */
+  --abk-transition:  background .3s, border-color .3s, color .2s;
+
+  /* Z-index scale */
+  --abk-z-sidebar:   40;
+  --abk-z-header:    30;
+  --abk-z-modal:     50;
+  --abk-z-toast:     100;
+}
+
+/* ── Dark mode tokens ────────────────────────────────────────────────────── */
+.abk-dark, [data-theme="dark"] {
+  --abk-cream:         #0D1117;
+  --abk-cream-deep:    #161B22;
+  --abk-ink:           #E6EDF3;
+  --abk-ink-mid:       #B8C9DB;
+  --abk-ink-light:     #8BA4BE;
+  --abk-ink-faint:     #5A7A96;
+  --abk-border:        #21303F;
+  --abk-border-light:  #1A2535;
+  --abk-card:          #13192A;
+  --abk-card-hover:    #1C2540;
+  --abk-green:         #3DD68C;
+  --abk-green-bg:      #0D2B1F;
+  --abk-blue:          #58A6FF;
+  --abk-blue-bg:       #0D1F35;
+  --abk-purple:        #A78BFA;
+  --abk-purple-bg:     #1A1535;
+  --abk-amber:         #F0A742;
+  --abk-amber-bg:      #2A1C06;
+  --abk-red:           #E05252;
+  --abk-red-bg:        #1F0D0D;
+  --abk-red-border:    #3D1515;
+  --abk-red-text:      #FF8080;
+  --abk-ticker-bg:     #090D14;
+  --abk-ticker-fg:     #E6EDF3;
+  --abk-texture-col:   #1A2535;
+  --abk-nav-active-bg:  #0D1F35;
+  --abk-nav-active-fg:  #58A6FF;
+  --abk-nav-active-acc: #3DD68C;
+  --abk-nav-idle-fg:    #8BA4BE;
+  --abk-nav-hover-bg:   #161B22;
+  --abk-nav-hover-fg:   #E6EDF3;
+}
+
+/* ── 2. Reset & Base ─────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+  /* Allow pinch-to-zoom on all browsers */
+  touch-action: manipulation;
+}
+
+body {
+  font-family: var(--abk-font-sans);
+  background: var(--abk-cream);
+  color: var(--abk-ink);
+  line-height: 1.5;
+  min-height: 100vh;
+  transition: var(--abk-transition);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  /* Allow pinch-to-zoom */
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+/* ── 3. Scrollbar ────────────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--abk-border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--abk-ink-faint); }
+
+/* ── 4. Typography helpers ───────────────────────────────────────────────── */
+.abk-serif  { font-family: var(--abk-font-serif) !important; }
+.abk-sans   { font-family: var(--abk-font-sans)  !important; }
+
+/* ── 5. Layout — App Shell ───────────────────────────────────────────────── */
+.abk-app {
+  display: flex;
+  min-height: 100vh;
+  background: var(--abk-cream);
+  transition: var(--abk-transition);
+}
+
+/* ── Sidebar ── */
+.abk-sidebar {
+  width: var(--abk-sidebar-w);
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: var(--abk-z-sidebar);
+  background: var(--abk-cream);
+  border-right: 1px solid var(--abk-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: var(--abk-transition), width .3s, transform .3s;
+}
+
+/* Sidebar grid texture */
+.abk-sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(var(--abk-texture-col) 1px, transparent 1px),
+    linear-gradient(90deg, var(--abk-texture-col) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: .18;
+}
+
+/* ── Main content area ── */
+.abk-main {
+  flex: 1;
+  margin-left: var(--abk-sidebar-w);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: margin-left .3s;
+}
+
+/* ── Mobile menu toggle ── */
+.abk-menu-toggle {
+  display: none;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: calc(var(--abk-z-sidebar) + 1);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--abk-radius-sm);
+  border: 1.5px solid var(--abk-border);
+  background: var(--abk-card);
+  color: var(--abk-ink-mid);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,.10), 0 1px 3px rgba(0,0,0,.06);
+  transition: background .15s, border-color .15s, box-shadow .15s, transform .1s;
+  flex-shrink: 0;
+}
+.abk-menu-toggle:hover {
+  background: var(--abk-cream-deep);
+  border-color: var(--abk-ink-faint);
+  box-shadow: 0 3px 12px rgba(0,0,0,.13);
+  transform: scale(1.04);
+}
+.abk-menu-toggle:active {
+  transform: scale(0.96);
+}
+
+/* ── Overlay for mobile sidebar ── */
+.abk-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  z-index: calc(var(--abk-z-sidebar) - 1);
+  backdrop-filter: blur(2px);
+}
+
+/* ── 6. Nav buttons ──────────────────────────────────────────────────────── */
+.abk-nav-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 400;
+  text-align: left;
+  color: var(--abk-nav-idle-fg);
+  background: transparent;
+  font-family: var(--abk-font-sans);
+  transition: background .18s, color .18s, transform .12s;
+  position: relative;
+  overflow: hidden;
+}
+.abk-nav-btn:hover {
+  background: var(--abk-nav-hover-bg);
+  color: var(--abk-nav-hover-fg);
+  transform: translateX(2px);
+}
+.abk-nav-btn.active {
+  background: var(--abk-nav-active-bg);
+  color: var(--abk-nav-active-fg);
+  font-weight: 500;
+}
+.abk-nav-btn.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--abk-nav-active-acc);
+}
+
+.abk-util-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 400;
+  text-align: left;
+  color: var(--abk-ink-light);
+  background: transparent;
+  font-family: var(--abk-font-sans);
+  transition: background .15s, color .15s;
+}
+.abk-util-btn:hover          { background: var(--abk-nav-hover-bg); color: var(--abk-nav-hover-fg); }
+.abk-util-btn.danger:hover   { background: var(--abk-red-bg);        color: var(--abk-red-text); }
+
+/* ── 6b. Sidebar v2 — wider, taller, more premium spacing ────────────────── */
+.abk-sidebar-v2 {
+  box-shadow: 2px 0 24px rgba(0,0,0,.06);
+}
+.abk-sidebar-v2 .abk-nav-btn-v2 {
+  padding: 10px 12px;
+  border-radius: 11px;
+  font-size: 13.5px;
+}
+.abk-sidebar-v2 .abk-nav-btn-v2.active {
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+.abk-sidebar-v2 nav::-webkit-scrollbar { width: 6px; }
+.abk-sidebar-v2 nav::-webkit-scrollbar-thumb {
+  background: var(--abk-border);
+  border-radius: 10px;
+}
+.abk-sidebar-v2 nav::-webkit-scrollbar-track { background: transparent; }
+
+/* ── 7. Role badges ──────────────────────────────────────────────────────── */
+.abk-role-ADMIN   { background: var(--abk-red-bg);     color: var(--abk-red-text); }
+.abk-role-WORKER  { background: var(--abk-blue-bg);    color: var(--abk-blue); }
+
+/* ── 8. Cards ────────────────────────────────────────────────────────────── */
+.abk-card {
+  background: var(--abk-card);
+  border: 1px solid var(--abk-border);
+  border-radius: var(--abk-radius-lg);
+  box-shadow: var(--abk-shadow-sm);
+  transition: var(--abk-transition);
+}
+.abk-card:hover { background: var(--abk-card-hover); }
+
+/* ── 9. Shared form inputs ───────────────────────────────────────────────── */
+.abk-input {
+  width: 100%;
+  border: 1px solid var(--abk-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--abk-ink);
+  background: var(--abk-card);
+  outline: none;
+  font-family: var(--abk-font-sans);
+  transition: border-color .15s, box-shadow .15s, background .3s;
+}
+.abk-input:focus {
+  border-color: var(--abk-green);
+  box-shadow: 0 0 0 3px rgba(29,158,117,.12);
+}
+.abk-input::placeholder { color: var(--abk-ink-faint); }
+.abk-dark .abk-input    { background: var(--abk-cream-deep); }
+
+/* ── 10. Buttons ─────────────────────────────────────────────────────────── */
+.abk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: var(--abk-radius-sm);
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--abk-font-sans);
+  transition: filter .15s, transform .1s;
+  white-space: nowrap;
+}
+.abk-btn:hover    { filter: brightness(1.08); }
+.abk-btn:active   { transform: scale(.97); }
+.abk-btn:disabled { opacity: .5; cursor: not-allowed; filter: none; }
+
+.abk-btn-primary  { background: var(--abk-green);  color: #fff; box-shadow: 0 2px 8px rgba(29,158,117,.3); }
+.abk-btn-danger   { background: var(--abk-red);    color: #fff; box-shadow: 0 2px 8px rgba(197,48,48,.3); }
+.abk-btn-ghost    { background: var(--abk-card);   color: var(--abk-ink-mid); border: 1px solid var(--abk-border); }
+.abk-btn-ghost:hover { background: var(--abk-cream-deep); filter: none; }
+
+/* ── 11. Page header ─────────────────────────────────────────────────────── */
+.abk-page-header {
+  padding: .5rem 0 1.4rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.abk-page-title {
+  font-family: var(--abk-font-serif);
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 500;
+  color: var(--abk-ink);
+  letter-spacing: -.5px;
+  line-height: 1.1;
+}
+.abk-page-subtitle {
+  font-size: 12px;
+  color: var(--abk-ink-faint);
+  margin-top: 4px;
+  font-weight: 300;
+}
+
+/* ── 12. Table ───────────────────────────────────────────────────────────── */
+.abk-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.abk-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  color: var(--abk-ink-light);
+  white-space: nowrap;
+  background: var(--abk-cream-deep);
+  border-bottom: 1px solid var(--abk-border);
+}
+.abk-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--abk-border-light);
+  font-size: 13px;
+  color: var(--abk-ink);
+}
+.abk-table tr:hover td { background: var(--abk-card-hover); }
+
+/* ── 13. Toast ───────────────────────────────────────────────────────────── */
+.abk-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: var(--abk-z-toast);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--abk-green);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(29,158,117,.35);
+  animation: abkToast 3.2s ease forwards;
+}
+
+/* ── 14. Modal ───────────────────────────────────────────────────────────── */
+.abk-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--abk-z-modal);
+  padding: 16px;
+  backdrop-filter: blur(4px);
+}
+.abk-modal {
+  background: var(--abk-card);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--abk-shadow-lg), 0 2px 8px rgba(0,0,0,.1);
+  border: 1px solid var(--abk-border);
+  animation: abkScaleIn .35s ease both;
+}
+
+/* ── 15. KPI grid ────────────────────────────────────────────────────────── */
+.abk-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+/* ── 16. Content grid ────────────────────────────────────────────────────── */
+.abk-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.abk-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.abk-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+
+/* ── 17. Keyframes ───────────────────────────────────────────────────────── */
+@keyframes abkFadeUp  { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
+@keyframes abkFadeIn  { from { opacity:0 } to { opacity:1 } }
+@keyframes abkScaleIn { from { opacity:0; transform:scale(.94) } to { opacity:1; transform:scale(1) } }
+@keyframes abkBarGrow { from { transform:scaleX(0) } to { transform:scaleX(1) } }
+@keyframes abkToast   { 0%{opacity:0;transform:translateY(-12px)} 10%{opacity:1;transform:translateY(0)} 85%{opacity:1} 100%{opacity:0} }
+@keyframes abkPulse   { 0%,100%{box-shadow:0 0 0 0 rgba(61,214,140,.5)} 70%{box-shadow:0 0 0 6px rgba(61,214,140,0)} }
+@keyframes abkSpin    { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+@keyframes abkSlideIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+
+/* ── 18. Animation utility classes ──────────────────────────────────────── */
+.abk-anim-fade-up  { opacity:0; animation:abkFadeUp  .45s ease both; }
+.abk-anim-fade-in  { opacity:0; animation:abkFadeIn  .45s ease both; }
+.abk-anim-scale-in { opacity:0; animation:abkScaleIn .45s ease both; }
+.abk-anim-slide-in { opacity:0; animation:abkSlideIn .35s ease both; }
+.abk-spin          { animation:abkSpin 1s linear infinite; }
+.abk-pulse         { animation:abkPulse 2.2s infinite; }
+.abk-prog-fill     { transform-origin:left; animation:abkBarGrow .85s ease both; }
+
+/* ── 19. Texture overlay (shared across pages) ───────────────────────────── */
+.abk-texture {
+  position: relative;
+}
+.abk-texture::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(var(--abk-texture-col) 1px, transparent 1px),
+    linear-gradient(90deg, var(--abk-texture-col) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: .25;
+}
+.abk-dark.abk-texture::before { opacity: .18; }
+
+/* ── 20. Divider ─────────────────────────────────────────────────────────── */
+.abk-divider {
+  height: 1px;
+  background: var(--abk-border-light);
+  margin: 4px 0;
+}
+
+/* ── 21. Loading spinner ─────────────────────────────────────────────────── */
+.abk-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid var(--abk-border);
+  border-top-color: var(--abk-green);
+  border-radius: 50%;
+  animation: abkSpin 1s linear infinite;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── TV / Large screens (1920px+) ────────────────────────────────────────── */
+@media (min-width: 1920px) {
+  :root { --abk-sidebar-w: 260px; }
+  html  { font-size: 18px; }
+  .abk-kpi-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .abk-page-title { font-size: 34px; }
+}
+
+/* ── Desktop (1280px–1919px) — default, no overrides needed ─────────────── */
+
+/* ── Laptop (1024px–1279px) ──────────────────────────────────────────────── */
+@media (max-width: 1279px) {
+  :root { --abk-sidebar-w: 220px; }
+  .abk-grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── Tablet landscape (768px–1023px) ─────────────────────────────────────── */
+@media (max-width: 1023px) {
+  :root { --abk-sidebar-w: 200px; }
+  .abk-grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .abk-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .abk-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── Tablet portrait (640px–767px) ──────────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Sidebar becomes a drawer */
+  .abk-sidebar {
+    transform: translateX(-100%);
+    width: 240px !important;
+    box-shadow: var(--abk-shadow-lg);
+  }
+  .abk-sidebar.open {
+    transform: translateX(0);
+  }
+  .abk-overlay.open {
+    display: block;
+  }
+  .abk-main {
+    margin-left: 0 !important;
+    padding-top: 52px; /* space for mobile toggle button */
+    min-width: 0;
+    width: 100%;
+    overflow-x: hidden;
+  }
+  .abk-menu-toggle {
+    display: flex;
+  }
+
+  /* Prevent any element from overflowing screen */
+  .abk-main * { max-width: 100%; }
+  .abk-main img { height: auto; }
+
+  /* Grids collapse */
+  .abk-grid-2,
+  .abk-grid-3,
+  .abk-grid-4 { grid-template-columns: 1fr; }
+  .abk-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Page padding */
+  .abk-page-pad { padding: 1rem !important; }
+
+  /* Tables become scrollable */
+  .abk-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Inputs & selects fill width on mobile */
+  .abk-input { font-size: 16px !important; } /* prevents iOS zoom on focus */
+
+  /* Toasts full-width on mobile */
+  .abk-toast {
+    left: 12px;
+    right: 12px;
+    top: 12px;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+/* ── Phone (max 639px) ───────────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  /* Keep KPI at 2 columns — don't collapse to 1 yet */
+  .abk-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .abk-page-title { font-size: 18px; }
+
+  /* Modals become bottom sheets */
+  .abk-modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    border-radius: 16px 16px 0 0;
+    align-self: flex-end;
+    margin: 0;
+  }
+  .abk-modal-overlay { align-items: flex-end; padding: 0; }
+
+  /* Stack page header vertically */
+  .abk-page-header { flex-direction: column; align-items: flex-start; }
+  .abk-page-header > div:last-child { width: 100%; }
+  .abk-page-header > div:last-child .abk-btn { width: 100%; justify-content: center; }
+
+  /* Full-width buttons */
+  .abk-btn-mobile-full { width: 100% !important; }
+
+  /* Tighter table cells — all columns remain visible, scroll horizontally */
+  .abk-table th { font-size: 9px; padding: 8px 8px; white-space: nowrap; }
+  .abk-table td { font-size: 11.5px; padding: 8px 8px; }
+
+  /* Ensure table scroll wrapper is always scrollable */
+  .abk-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--abk-radius-md);
+  }
+
+  /* Prevent text overflow in cards */
+  .abk-card { word-break: break-word; }
+}
+
+/* ── Small phone (max 480px) ─────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  /* Keep KPI at 2-col — only collapse grids that aren't KPI */
+  .abk-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Even tighter padding */
+  .abk-page-pad { padding: 0.75rem !important; }
+
+  /* Stack any remaining 2-col grids */
+  .abk-grid-2 { grid-template-columns: 1fr !important; }
+
+  /* Reduce font sizes on small phones */
+  .abk-page-title { font-size: 16px; }
+  .abk-btn { font-size: 12.5px; }
+}
+
+/* ── Very small phone (max 380px) ────────────────────────────────────────── */
+@media (max-width: 380px) {
+  /* Only at truly tiny screens collapse KPI to 1-col */
+  .abk-kpi-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── Small phone (max 375px) ─────────────────────────────────────────────── */
+@media (max-width: 375px) {
+  html { font-size: 14px; }
+
+  .abk-btn { padding: 8px 14px; font-size: 12px; }
+  .abk-sidebar { width: 85vw !important; max-width: 300px !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PRINT STYLES
+   ══════════════════════════════════════════════════════════════════════════ */
+@media print {
+  .abk-sidebar,
+  .abk-menu-toggle,
+  .abk-toast { display: none !important; }
+  .abk-main  { margin-left: 0 !important; }
+  body       { background: white; color: black; }
+}

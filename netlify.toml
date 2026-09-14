@@ -1,0 +1,30 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# ── SPA routing — send all routes to index.html ──────────
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# ── Security headers ──────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# ── Never cache the manifest or service worker — Chrome's WebAPK
+#    minting process (and browsers generally) should always see the
+#    latest version, never a stale cached copy from our own CDN. ──
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
