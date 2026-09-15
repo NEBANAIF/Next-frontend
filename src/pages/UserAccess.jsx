@@ -5,7 +5,7 @@ import {
   Lock, User, ChevronLeft, ChevronRight, AlertCircle, Mail, Calendar,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getUsers, createUser, updateUser, deleteUser, getActiveBranches, getUserBranchAccess, assignUserBranch, unassignUserBranch } from '../services/api';
+import { getUsers, createUser, updateUser, deleteUser, getActiveBranches } from '../services/api';
 
 // ─── Shared design system CSS ─────────────────────────────────────────────────
 const GLOBAL_CSS = `
@@ -100,14 +100,14 @@ const ROLE_DEFAULTS = {
   STAFF:             ['products','sales','loans'],
 };
 
-// Roles whose access is limited to explicitly assigned branches (see the
-// "Branch access" section of the edit-user modal). ADMIN and WORKER stay
-// unscoped regardless.
-const SCOPED_ROLES = ['WAREHOUSE_MANAGER', 'STORE_MANAGER', 'STAFF'];
+// Every role except ADMIN requires exactly one branch, assigned at
+// creation and shown here as a required field on the form itself — not a
+// separate multi-branch assignment step.
+const SCOPED_ROLES = ['WORKER', 'WAREHOUSE_MANAGER', 'STORE_MANAGER', 'STAFF'];
 
 const EMPTY_FORM = {
   name: '', email: '', role: 'WORKER',
-  password: '', status: 'ACTIVE',
+  password: '', status: 'ACTIVE', branchId: '',
   permissions: ROLE_DEFAULTS['WORKER'],
 };
 
@@ -154,7 +154,7 @@ const inputStyle = {
   transition: 'border-color .2s',
 };
 
-export default function UserAccess({ dark: darkProp }) {
+export default function UserAccess({ dark: darkProp, initialTab }) {
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -205,7 +205,7 @@ export default function UserAccess({ dark: darkProp }) {
   const [showPassword, setShowPassword]   = useState(false);
   const [successMsg, setSuccessMsg]       = useState('');
   const [errorMsg, setErrorMsg]           = useState('');
-  const [activeTab, setActiveTab]         = useState('users');
+  const [activeTab, setActiveTab]         = useState(initialTab || 'users');
 
   const fetchUsers = useCallback(async () => {
     setLoading(true); setErrorMsg('');
@@ -232,78 +232,37 @@ export default function UserAccess({ dark: darkProp }) {
   const adminCount   = users.filter(u => u.role === 'ADMIN').length;
   const workerCount  = users.filter(u => u.role === 'WORKER').length;
 
-  function openCreate() { setEditUser(null); setForm(EMPTY_FORM); setShowPassword(false); setAllBranches([]); setUserBranchIds([]); setShowModal(true); }  function openEdit(u) {
+  function openCreate() { setEditUser(null); setForm(EMPTY_FORM); setShowPassword(false); setShowModal(true); }
+  function openEdit(u) {
     setEditUser(u);
-    setForm({ name: u.name, email: u.email, role: u.role, password: '', status: u.status, permissions: u.permissions || ROLE_DEFAULTS[u.role] || [] });
-    setShowPassword(false); setAllBranches([]); setUserBranchIds([]); setShowModal(true);
-    if (SCOPED_ROLES.includes(u.role)) loadBranchAccess(u.id);
+    setForm({
+      name: u.name, email: u.email, role: u.role, password: '', status: u.status,
+      branchId: u.branch?.id ?? '', permissions: u.permissions || ROLE_DEFAULTS[u.role] || [],
+    });
+    setShowPassword(false); setShowModal(true);
   }
   function handleRoleChange(role) {
-    setForm(f => ({ ...f, role, permissions: ROLE_DEFAULTS[role] || [] }));
-    if (SCOPED_ROLES.includes(role) && allBranches.length === 0) {
-      if (editUser) loadBranchAccess(editUser.id);
-      else loadBranchList();
-    }
+    setForm(f => ({ ...f, role, permissions: ROLE_DEFAULTS[role] || [], branchId: role === 'ADMIN' ? '' : f.branchId }));
   }
   function togglePermission(key) {
     setForm(f => ({ ...f, permissions: f.permissions.includes(key) ? f.permissions.filter(p => p !== key) : [...f.permissions, key] }));
   }
 
-  // ── Branch access (for the three location-scoped roles) ────────────────
-  const [allBranches, setAllBranches]         = useState([]);
-  const [userBranchIds, setUserBranchIds]     = useState([]);
-  const [loadingBranches, setLoadingBranches] = useState(false);
-
-  async function loadBranchAccess(userId) {
-    setLoadingBranches(true);
-    try {
-      const [branches, access] = await Promise.all([
-        getActiveBranches().catch(() => []),
-        getUserBranchAccess(userId).catch(() => []),
-      ]);
-      setAllBranches(branches);
-      setUserBranchIds(access.map(a => a.branch.id));
-    } finally { setLoadingBranches(false); }
-  }
-
-  // Used when creating a brand-new user — there's no user id yet to fetch
-  // existing access for, so this only populates the list of branches to
-  // choose from. Selections are held in local state and sent as
-  // `branchIds` on the create request itself (see handleSave).
-  async function loadBranchList() {
-    setLoadingBranches(true);
-    try {
-      const branches = await getActiveBranches().catch(() => []);
-      setAllBranches(branches);
-    } finally { setLoadingBranches(false); }
-  }
-
-  async function toggleBranchAccess(branchId) {
-    const has = userBranchIds.includes(branchId);
-    // Creating a brand-new user: no id exists yet to call the branch-access
-    // API against, so just track the selection locally — it's sent as
-    // `branchIds` on the create request itself (see handleSave).
-    if (!editUser) {
-      setUserBranchIds(ids => has ? ids.filter(id => id !== branchId) : [...ids, branchId]);
-      return;
-    }
-    try {
-      if (has) { await unassignUserBranch(editUser.id, branchId); setUserBranchIds(ids => ids.filter(id => id !== branchId)); }
-      else     { await assignUserBranch(editUser.id, branchId);   setUserBranchIds(ids => [...ids, branchId]); }
-    } catch (e) { showError(e?.response?.data?.error || e.message || 'Failed to update branch access.'); }
-  }
+  // ── Branch (required for every role except ADMIN, set right on the form) ──
+  const [allBranches, setAllBranches] = useState([]);
+  useEffect(() => { getActiveBranches().then(setAllBranches).catch(() => setAllBranches([])); }, []);
 
   async function handleSave() {
     if (!form.name.trim() || !form.email.trim()) { showError('Name and email are required.'); return; }
     if (!editUser && !form.password)              { showError('Password is required for new users.'); return; }
     if (form.password && form.password.length < 6){ showError('Password must be at least 6 characters.'); return; }
-    if (!editUser && SCOPED_ROLES.includes(form.role) && userBranchIds.length === 0) {
-      showError('Select at least one branch for this role before saving.'); return;
-    }
+    if (SCOPED_ROLES.includes(form.role) && !form.branchId) { showError('A branch is required for every role except Admin.'); return; }
     setSaving(true); setErrorMsg('');
-    const payload = { name: form.name.trim(), email: form.email.trim().toLowerCase(), role: form.role, status: form.status };
+    const payload = {
+      name: form.name.trim(), email: form.email.trim().toLowerCase(), role: form.role, status: form.status,
+      branch: form.role === 'ADMIN' ? null : { id: parseInt(form.branchId) },
+    };
     if (form.password) payload.password = form.password;
-    if (!editUser && SCOPED_ROLES.includes(form.role)) payload.branchIds = userBranchIds;
     try {
       if (editUser) {
         const updated = await updateUser(editUser.id, payload);
@@ -724,37 +683,29 @@ export default function UserAccess({ dark: darkProp }) {
                 </div>
               </div>
 
-              {/* Branch access — only relevant for the three location-scoped roles */}
+              {/* Branch — required for every role except Admin */}
               {SCOPED_ROLES.includes(form.role) && (
                 <div>
                   <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--ink-light)', textTransform: 'uppercase', letterSpacing: '0.10em', marginBottom: 8 }}>
-                    Branch Access
+                    Branch *
                   </div>
-                  {loadingBranches ? (
-                    <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-                      <div style={{ width: 20, height: 20, border: '3px solid var(--border)', borderTopColor: 'var(--purple)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' }} />
-                    </div>
-                  ) : allBranches.length === 0 ? (
+                  {allBranches.length === 0 ? (
                     <div style={{ fontSize: 11.5, color: 'var(--ink-faint)', fontWeight: 300 }}>No active branches to assign yet.</div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 180, overflowY: 'auto' }}>
-                      {allBranches.map(b => {
-                        const checked = userBranchIds.includes(b.id);
-                        return (
-                          <label key={b.id} style={{
-                            display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px',
-                            borderRadius: 8, border: '1px solid var(--border)',
-                            background: checked ? 'var(--purple-bg)' : 'var(--cream-deep)',
-                            cursor: 'pointer', fontSize: 12.5,
-                          }}>
-                            <input type="checkbox" checked={checked} onChange={() => toggleBranchAccess(b.id)} />
-                            <span style={{ color: 'var(--ink)', fontWeight: 500 }}>{b.name}</span>
-                            <span style={{ color: 'var(--ink-faint)', fontWeight: 300, fontSize: 11 }}>— {b.location?.name}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
+                    <select
+                      value={form.branchId}
+                      onChange={e => setForm(f => ({ ...f, branchId: e.target.value }))}
+                      className="abk-input"
+                    >
+                      <option value="">Select a branch…</option>
+                      {allBranches.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}{b.location?.name ? ` — ${b.location.name}` : ''}</option>
+                      ))}
+                    </select>
                   )}
+                  <div style={{ fontSize: 10.5, color: 'var(--ink-faint)', marginTop: 4, fontWeight: 300 }}>
+                    This user will only see and manage data for this branch.
+                  </div>
                 </div>
               )}
 

@@ -17,12 +17,12 @@
 import { useState, useEffect } from 'react';
 import {
   Search, Plus, X, RefreshCw, CheckCircle, ArrowLeftRight, ArrowRight,
-  Clock, CheckCircle2, XCircle, PackageCheck, Truck, Ban, ChevronLeft, ChevronRight,
+  Clock, CheckCircle2, XCircle, PackageCheck, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import {
   getProducts, getActiveBranches, getAvailableBatches,
   getPendingTransfers, searchTransfers, requestTransfer,
-  approveTransfer, rejectTransfer, cancelTransfer, markTransferInTransit, completeTransfer,
+  approveTransfer, rejectTransfer, completeTransfer,
 } from '../services/api';
 
 /* Reuses the same design tokens as Branches.jsx / Batches.jsx */
@@ -195,14 +195,10 @@ function IconBtn({ onClick, title, danger, children }) {
 
 function StatusBadge({ status }) {
   const map = {
-    PENDING:     { bg: 'var(--amber-bg)', fg: 'var(--amber)', Icon: Clock },
-    APPROVED:    { bg: 'var(--blue-bg)',  fg: 'var(--blue)',  Icon: CheckCircle2 },
-    IN_TRANSIT:  { bg: 'var(--purple-bg)',fg: 'var(--purple)',Icon: Truck },
-    RECEIVED:    { bg: 'var(--green-bg)', fg: 'var(--green)', Icon: PackageCheck },
-    REJECTED:    { bg: 'var(--red-bg)',   fg: 'var(--red-text)', Icon: XCircle },
-    CANCELLED:   { bg: 'var(--red-bg)',   fg: 'var(--red-text)', Icon: Ban },
-    // Legacy data recorded before the RECEIVED rename — display the same as RECEIVED.
-    COMPLETED:   { bg: 'var(--green-bg)', fg: 'var(--green)', Icon: PackageCheck },
+    PENDING:   { bg: 'var(--amber-bg)', fg: 'var(--amber)', Icon: Clock },
+    APPROVED:  { bg: 'var(--blue-bg)',  fg: 'var(--blue)',  Icon: CheckCircle2 },
+    REJECTED:  { bg: 'var(--red-bg)',   fg: 'var(--red-text)', Icon: XCircle },
+    COMPLETED: { bg: 'var(--green-bg)', fg: 'var(--green)', Icon: PackageCheck },
   };
   const c = map[status] || map.PENDING;
   const { Icon } = c;
@@ -362,11 +358,6 @@ function PendingList({ branches, actor, showSuccess, refreshTick, refresh }) {
     try { await rejectTransfer(t.id, actor, reason); showSuccess(`Transfer #${t.id} rejected`); refresh(); }
     catch (e) { alert(e?.response?.data?.error || e.message || 'Failed to reject transfer.'); }
   }
-  async function handleCancel(t) {
-    if (!window.confirm(`Cancel transfer #${t.id}? This can't be undone.`)) return;
-    try { await cancelTransfer(t.id, actor, 'Cancelled by requester'); showSuccess(`Transfer #${t.id} cancelled`); refresh(); }
-    catch (e) { alert(e?.response?.data?.error || e.message || 'Failed to cancel transfer.'); }
-  }
 
   return (
     <TransferTable
@@ -377,7 +368,6 @@ function PendingList({ branches, actor, showSuccess, refreshTick, refresh }) {
         <div style={{ display: 'flex', gap: 6 }}>
           <IconBtn onClick={() => handleApprove(t)} title="Approve — moves the stock now"><CheckCircle2 size={12} /></IconBtn>
           <IconBtn onClick={() => handleReject(t)} title="Reject" danger><XCircle size={12} /></IconBtn>
-          <IconBtn onClick={() => handleCancel(t)} title="Cancel this request" danger><Ban size={12} /></IconBtn>
         </div>
       )}
     />
@@ -409,17 +399,8 @@ function AllTransfersList({ branches, actor, showSuccess, refreshTick, refresh }
     try { await rejectTransfer(t.id, actor, reason); showSuccess(`Transfer #${t.id} rejected`); refresh(); }
     catch (e) { alert(e?.response?.data?.error || e.message || 'Failed to reject transfer.'); }
   }
-  async function handleCancel(t) {
-    if (!window.confirm(`Cancel transfer #${t.id}? This can't be undone.`)) return;
-    try { await cancelTransfer(t.id, actor, 'Cancelled by requester'); showSuccess(`Transfer #${t.id} cancelled`); refresh(); }
-    catch (e) { alert(e?.response?.data?.error || e.message || 'Failed to cancel transfer.'); }
-  }
-  async function handleInTransit(t) {
-    try { await markTransferInTransit(t.id, actor); showSuccess(`Transfer #${t.id} marked in transit`); refresh(); }
-    catch (e) { alert(e?.response?.data?.error || e.message || 'Failed to update transfer.'); }
-  }
   async function handleComplete(t) {
-    try { await completeTransfer(t.id, actor); showSuccess(`Transfer #${t.id} marked received`); refresh(); }
+    try { await completeTransfer(t.id, actor); showSuccess(`Transfer #${t.id} marked complete`); refresh(); }
     catch (e) { alert(e?.response?.data?.error || e.message || 'Failed to complete transfer.'); }
   }
 
@@ -430,10 +411,8 @@ function AllTransfersList({ branches, actor, showSuccess, refreshTick, refresh }
           <option value="">All statuses</option>
           <option value="PENDING">Pending</option>
           <option value="APPROVED">Approved</option>
-          <option value="IN_TRANSIT">In Transit</option>
-          <option value="RECEIVED">Received</option>
           <option value="REJECTED">Rejected</option>
-          <option value="CANCELLED">Cancelled</option>
+          <option value="COMPLETED">Completed</option>
         </select>
         <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)} className="abk-input" style={{ maxWidth: 240 }}>
           <option value="">All branches</option>
@@ -453,19 +432,12 @@ function AllTransfersList({ branches, actor, showSuccess, refreshTick, refresh }
               <>
                 <IconBtn onClick={() => handleApprove(t)} title="Approve — moves the stock now"><CheckCircle2 size={12} /></IconBtn>
                 <IconBtn onClick={() => handleReject(t)} title="Reject" danger><XCircle size={12} /></IconBtn>
-                <IconBtn onClick={() => handleCancel(t)} title="Cancel this request" danger><Ban size={12} /></IconBtn>
               </>
             )}
             {t.status === 'APPROVED' && (
-              <>
-                <IconBtn onClick={() => handleInTransit(t)} title="Mark as in transit"><Truck size={12} /></IconBtn>
-                <IconBtn onClick={() => handleComplete(t)} title="Mark as received at destination"><PackageCheck size={12} /></IconBtn>
-              </>
-            )}
-            {t.status === 'IN_TRANSIT' && (
               <IconBtn onClick={() => handleComplete(t)} title="Mark as received at destination"><PackageCheck size={12} /></IconBtn>
             )}
-            {(t.status === 'REJECTED' || t.status === 'CANCELLED' || t.status === 'RECEIVED' || t.status === 'COMPLETED') && (
+            {(t.status === 'REJECTED' || t.status === 'COMPLETED') && (
               <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>—</span>
             )}
           </div>

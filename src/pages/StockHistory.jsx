@@ -5,7 +5,7 @@ import {
   Package, Calendar, XCircle, CheckCircle,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getStockHistory, deleteStockHistory } from '../services/api';
+import { getStockHistory, deleteStockHistory, getActiveBranches } from '../services/api';
 
 // ─── Same shared CSS as Dashboard & Analytics ─────────────────────────────────
 const GLOBAL_CSS = `
@@ -188,17 +188,20 @@ export default function StockHistory({ dark: darkProp }) {
   const [search, setSearch]               = useState('');
   const [typeFilter, setTypeFilter]       = useState('ALL');
   const [dateFilter, setDateFilter]       = useState('');
+  const [branchFilter, setBranchFilter]   = useState('');
+  const [branches, setBranches]           = useState([]);
   const [page, setPage]                   = useState(1);
   const [rowsPerPage, setRowsPerPage]     = useState(10);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [successMsg, setSuccessMsg]       = useState('');
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [branchFilter]);
+  useEffect(() => { getActiveBranches().then(setBranches).catch(() => setBranches([])); }, []);
 
   async function load() {
     setLoading(true); setError(null);
     try {
-      const data = await getStockHistory();
+      const data = await getStockHistory(branchFilter || undefined);
       setHistory(data);
     } catch { setError(t('sales.errorConnect')); }
     finally   { setLoading(false); }
@@ -370,6 +373,16 @@ export default function StockHistory({ dark: darkProp }) {
             <option value="DISCARD">{t('stock.typeDiscard')}</option>
           </select>
 
+          {/* Branch filter — Store/Warehouse/Branch scope */}
+          <select
+            value={branchFilter}
+            onChange={e => { setBranchFilter(e.target.value); setPage(1); }}
+            style={{ ...inputStyle, cursor: 'pointer' }}
+          >
+            <option value="">All Branches</option>
+            {branches.map(b => <option key={b.id} value={b.id}>{b.location?.name ? `${b.location.name} — ${b.name}` : b.name}</option>)}
+          </select>
+
           {/* Date filter - with label */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={{ fontSize: 11, fontWeight: 500, color: 'var(--ink-light)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -387,9 +400,9 @@ export default function StockHistory({ dark: darkProp }) {
           </div>
 
           {/* Clear */}
-          {(search || typeFilter !== 'ALL' || dateFilter) && (
+          {(search || typeFilter !== 'ALL' || dateFilter || branchFilter) && (
             <button
-              onClick={() => { setSearch(''); setTypeFilter('ALL'); setDateFilter(''); setPage(1); }}
+              onClick={() => { setSearch(''); setTypeFilter('ALL'); setDateFilter(''); setBranchFilter(''); setPage(1); }}
               style={{
                 ...inputStyle, display: 'flex', alignItems: 'center', gap: 5,
                 cursor: 'pointer', color: 'var(--red-text)', borderColor: 'var(--red-border)',
@@ -458,7 +471,7 @@ export default function StockHistory({ dark: darkProp }) {
                     <td colSpan={9} style={{ textAlign: 'center', padding: '3.5rem 0' }}>
                       <Clock size={32} style={{ color: 'var(--ink-faint)', margin: '0 auto 10px' }} />
                       <p style={{ color: 'var(--ink-faint)', fontSize: 13, fontWeight: 300 }}>
-                        {search || typeFilter !== 'ALL' || dateFilter ? t('stock.noHistoryFilter') : t('stock.noHistory')}
+                        {search || typeFilter !== 'ALL' || dateFilter || branchFilter ? t('stock.noHistoryFilter') : t('stock.noHistory')}
                       </p>
                     </td>
                   </tr>

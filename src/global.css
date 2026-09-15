@@ -51,7 +51,7 @@
   --abk-font-serif:  'Playfair Display', Georgia, serif;
 
   /* Spacing scale */
-  --abk-sidebar-w:   252px;
+  --abk-sidebar-w:   280px;
   --abk-radius-sm:   8px;
   --abk-radius-md:   12px;
   --abk-radius-lg:   16px;
@@ -240,7 +240,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px;
+  padding: 10px 12px;
   border-radius: 10px;
   border: none;
   cursor: pointer;
@@ -295,24 +295,45 @@ body {
 .abk-util-btn:hover          { background: var(--abk-nav-hover-bg); color: var(--abk-nav-hover-fg); }
 .abk-util-btn.danger:hover   { background: var(--abk-red-bg);        color: var(--abk-red-text); }
 
-/* ── 6b. Sidebar v2 — wider, taller, more premium spacing ────────────────── */
-.abk-sidebar-v2 {
-  box-shadow: 2px 0 24px rgba(0,0,0,.06);
+/* ── 6b. Collapsible nav section headers ─────────────────────────────────── */
+.abk-nav-section-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--abk-font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--abk-ink-faint);
+  transition: color .15s;
 }
-.abk-sidebar-v2 .abk-nav-btn-v2 {
-  padding: 10px 12px;
-  border-radius: 11px;
-  font-size: 13.5px;
-}
-.abk-sidebar-v2 .abk-nav-btn-v2.active {
-  box-shadow: 0 1px 2px rgba(0,0,0,.04);
-}
-.abk-sidebar-v2 nav::-webkit-scrollbar { width: 6px; }
-.abk-sidebar-v2 nav::-webkit-scrollbar-thumb {
-  background: var(--abk-border);
+.abk-nav-section-btn:hover { color: var(--abk-ink-light); }
+.abk-nav-section-chevron { transition: transform .2s; flex-shrink: 0; }
+.abk-nav-section-chevron.collapsed { transform: rotate(-90deg); }
+
+/* ── 6c. Branch/location selector pill (sidebar header) ──────────────────── */
+.abk-branch-pill {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
   border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: inherit;
+  cursor: default;
+  font-family: var(--abk-font-sans);
+  text-align: left;
 }
-.abk-sidebar-v2 nav::-webkit-scrollbar-track { background: transparent; }
+.abk-dark .abk-branch-pill { border-color: rgba(88,166,255,.2); background: rgba(88,166,255,.08); }
 
 /* ── 7. Role badges ──────────────────────────────────────────────────────── */
 .abk-role-ADMIN   { background: var(--abk-red-bg);     color: var(--abk-red-text); }
@@ -537,7 +558,7 @@ body {
 
 /* ── TV / Large screens (1920px+) ────────────────────────────────────────── */
 @media (min-width: 1920px) {
-  :root { --abk-sidebar-w: 260px; }
+  :root { --abk-sidebar-w: 304px; }
   html  { font-size: 18px; }
   .abk-kpi-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .abk-page-title { font-size: 34px; }
@@ -547,13 +568,13 @@ body {
 
 /* ── Laptop (1024px–1279px) ──────────────────────────────────────────────── */
 @media (max-width: 1279px) {
-  :root { --abk-sidebar-w: 220px; }
+  :root { --abk-sidebar-w: 248px; }
   .abk-grid-4 { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* ── Tablet landscape (768px–1023px) ─────────────────────────────────────── */
 @media (max-width: 1023px) {
-  :root { --abk-sidebar-w: 200px; }
+  :root { --abk-sidebar-w: 224px; }
   .abk-grid-3 { grid-template-columns: repeat(2, 1fr); }
   .abk-grid-4 { grid-template-columns: repeat(2, 1fr); }
   .abk-kpi-grid { grid-template-columns: repeat(2, 1fr); }

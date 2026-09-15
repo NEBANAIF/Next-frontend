@@ -110,7 +110,7 @@ export const addStock = adjustStock;
 // getSalesToday() → ADMIN + WORKER (today's sales only)
 // recordSale()    → ADMIN + WORKER (create new sale)
 // deleteSale()    → ADMIN only (returns 403 for WORKER)
-export const getSales      = ()     => api.get('/sales').then(r => r.data);
+export const getSales      = (branchId)     => api.get('/sales', { params: branchId ? { branchId } : {} }).then(r => r.data);
 
 // Paginated + searchable sales list — powers the Sales page table.
 // Only fetches one page of rows at a time instead of the whole sales
@@ -188,43 +188,6 @@ export const getBranchesPage = ({ page = 0, size = 20, locationId, search = '' }
   return api.get('/branches/page', { params }).then(r => r.data);
 };
 
-// ── CUSTOMERS ────────────────────────────────────────────────────────────
-// Branch-scoped customer directory. ADMIN sees everyone (optionally
-// filtered to one branch via branchId); scoped roles only ever see their
-// own branch's customers regardless of what's passed here.
-export const getCustomers       = (branchId) => api.get('/customers', { params: branchId ? { branchId } : {} }).then(r => r.data);
-export const getCustomersPage   = ({ page = 0, size = 20, search = '' } = {}) =>
-  api.get('/customers/page', { params: { page, size, ...(search ? { search } : {}) } }).then(r => r.data);
-export const getCustomerById    = (id)       => api.get(`/customers/${id}`).then(r => r.data);
-export const createCustomer     = (data)     => api.post('/customers', data).then(r => r.data);
-export const updateCustomer     = (id, data) => api.put(`/customers/${id}`, data).then(r => r.data);
-export const deleteCustomer     = (id)       => api.delete(`/customers/${id}`).then(r => r.data);
-
-// ── SUPPLIERS ────────────────────────────────────────────────────────────
-// Global directory (like the product catalog) — not branch-scoped.
-export const getSuppliers       = ()         => api.get('/suppliers').then(r => r.data);
-export const getActiveSuppliers = ()         => api.get('/suppliers/active').then(r => r.data);
-export const getSuppliersPage   = ({ page = 0, size = 20, search = '' } = {}) =>
-  api.get('/suppliers/page', { params: { page, size, ...(search ? { search } : {}) } }).then(r => r.data);
-export const getSupplierById    = (id)       => api.get(`/suppliers/${id}`).then(r => r.data);
-export const createSupplier     = (data)     => api.post('/suppliers', data).then(r => r.data);
-export const updateSupplier     = (id, data) => api.put(`/suppliers/${id}`, data).then(r => r.data);
-export const deleteSupplier     = (id)       => api.delete(`/suppliers/${id}`).then(r => r.data);
-
-// ── PURCHASES (Purchase Orders) ────────────────────────────────────────────
-// Always targets one destination branch. Receiving a line item (fully or
-// partially) creates a real ProductBatch via the same path a manual batch
-// receipt uses — see PurchaseService.receiveItem/receiveAll on the backend.
-export const getPurchasesPage = ({ page = 0, size = 20, status = '' } = {}) =>
-  api.get('/purchases', { params: { page, size, ...(status ? { status } : {}) } }).then(r => r.data);
-export const getPurchaseHistory   = ()             => api.get('/purchases/history').then(r => r.data);
-export const getPurchaseById      = (id)           => api.get(`/purchases/${id}`).then(r => r.data);
-export const createPurchase       = (data)         => api.post('/purchases', data).then(r => r.data);
-export const receivePurchaseItem  = (id, data)     => api.post(`/purchases/${id}/receive-item`, data).then(r => r.data);
-export const receivePurchaseAll   = (id, actor)    => api.post(`/purchases/${id}/receive-all`, { actor }).then(r => r.data);
-export const cancelPurchase       = (id, actor)    => api.post(`/purchases/${id}/cancel`, { actor }).then(r => r.data);
-
-
 // ── PRODUCT BATCHES ──────────────────────────────────────────────────────
 // A batch is a received lot of a product at a specific branch, at its own
 // cost. Sales and transfers draw down batches automatically (FIFO) or from
@@ -261,8 +224,6 @@ export const getTransferById = (id) => api.get(`/transfers/${id}`).then(r => r.d
 export const requestTransfer = (data) => api.post('/transfers', data).then(r => r.data);
 export const approveTransfer = (id, actor) => api.post(`/transfers/${id}/approve`, { actor }).then(r => r.data);
 export const rejectTransfer  = (id, actor, reason) => api.post(`/transfers/${id}/reject`, { actor, reason }).then(r => r.data);
-export const cancelTransfer  = (id, actor, reason) => api.post(`/transfers/${id}/cancel`, { actor, reason }).then(r => r.data);
-export const markTransferInTransit = (id, actor) => api.post(`/transfers/${id}/in-transit`, { actor }).then(r => r.data);
 export const completeTransfer = (id, actor) => api.post(`/transfers/${id}/complete`, { actor }).then(r => r.data);
 
 export const getTransfersPage = ({ page = 0, size = 20, status = '', branchId } = {}) => {
@@ -313,13 +274,79 @@ export const updateExpense = (id, data) => api.put(`/expenses/${id}`, data).then
 export const deleteExpense = (id)       => api.delete(`/expenses/${id}`).then(r => r.data);
 
 // ── STOCK HISTORY (ADMIN only — returns 403 for WORKER) ───────────────────
-export const getStockHistory          = ()   => api.get('/stock-history').then(r => r.data);
+export const getStockHistory          = (branchId)   => api.get('/stock-history', { params: branchId ? { branchId } : {} }).then(r => r.data);
 export const getStockHistoryByProduct = (id) => api.get(`/stock-history/product/${id}`).then(r => r.data);
 export const deleteStockHistory       = (id) => api.delete(`/stock-history/${id}`).then(r => r.data);
 
 export const stockHistoryAPI = {
   getAll:  getStockHistory,
   delete:  deleteStockHistory,
+};
+
+// ── SUPPLIERS (company-wide, not branch-scoped) ───────────────────────────
+// GET: any authenticated role. POST/PUT/DELETE: ADMIN only.
+export const getSuppliers       = (search = '') => api.get('/suppliers', { params: search ? { search } : {} }).then(r => r.data);
+export const getActiveSuppliers = ()            => api.get('/suppliers/active').then(r => r.data);
+export const getSupplierById    = (id)          => api.get(`/suppliers/${id}`).then(r => r.data);
+export const createSupplier     = (data)        => api.post('/suppliers', data).then(r => r.data);
+export const updateSupplier     = (id, data)    => api.put(`/suppliers/${id}`, data).then(r => r.data);
+export const deleteSupplier     = (id)          => api.delete(`/suppliers/${id}`).then(r => r.data);
+
+export const getSuppliersPage = ({ page = 0, size = 20, search = '' } = {}) => {
+  const params = { page, size };
+  if (search) params.search = search;
+  return api.get('/suppliers/page', { params }).then(r => r.data);
+};
+
+// ── PURCHASE ORDERS ────────────────────────────────────────────────────────
+// Draft → Ordered → Partially Received / Received (or Cancelled). Receiving
+// against a line creates a batch automatically — see receivePurchaseOrderLine.
+export const searchPurchaseOrders = (branchId, status = '', search = '') =>
+  api.get('/purchase-orders', { params: { ...(branchId ? { branchId } : {}), ...(status ? { status } : {}), ...(search ? { search } : {}) } }).then(r => r.data);
+export const getPurchaseOrderById    = (id) => api.get(`/purchase-orders/${id}`).then(r => r.data);
+export const getPurchaseOrderLines   = (id) => api.get(`/purchase-orders/${id}/lines`).then(r => r.data);
+export const createPurchaseOrder     = (data) => api.post('/purchase-orders', data).then(r => r.data);
+export const markPurchaseOrderOrdered = (id)  => api.post(`/purchase-orders/${id}/mark-ordered`).then(r => r.data);
+export const cancelPurchaseOrder     = (id)   => api.post(`/purchase-orders/${id}/cancel`).then(r => r.data);
+export const receivePurchaseOrderLine = (poId, lineId, data) =>
+  api.post(`/purchase-orders/${poId}/lines/${lineId}/receive`, data).then(r => r.data);
+
+export const getPurchaseOrdersPage = ({ page = 0, size = 20, branchId, status = '', search = '' } = {}) => {
+  const params = { page, size };
+  if (branchId) params.branchId = branchId;
+  if (status) params.status = status;
+  if (search) params.search = search;
+  return api.get('/purchase-orders/page', { params }).then(r => r.data);
+};
+
+// ── CUSTOMERS (branch-scoped) ──────────────────────────────────────────────
+export const searchCustomers = (branchId, search = '') =>
+  api.get('/customers', { params: { ...(branchId ? { branchId } : {}), ...(search ? { search } : {}) } }).then(r => r.data);
+export const getActiveCustomersForBranch = (branchId) => api.get('/customers/active', { params: { branchId } }).then(r => r.data);
+export const getCustomerById = (id) => api.get(`/customers/${id}`).then(r => r.data);
+export const createCustomer  = (data) => api.post('/customers', data).then(r => r.data);
+export const updateCustomer  = (id, data) => api.put(`/customers/${id}`, data).then(r => r.data);
+export const deleteCustomer  = (id) => api.delete(`/customers/${id}`).then(r => r.data);
+
+export const getCustomersPage = ({ page = 0, size = 20, branchId, search = '' } = {}) => {
+  const params = { page, size };
+  if (branchId) params.branchId = branchId;
+  if (search) params.search = search;
+  return api.get('/customers/page', { params }).then(r => r.data);
+};
+
+// ── RETURNS ────────────────────────────────────────────────────────────────
+// Always against a specific past sale. restock=true credits the original
+// batch(es) back to stock; restock=false is refund/reporting-only.
+export const searchReturns = (branchId) => api.get('/returns', { params: branchId ? { branchId } : {} }).then(r => r.data);
+export const getReturnById = (id) => api.get(`/returns/${id}`).then(r => r.data);
+export const getReturnsForSale = (saleId) => api.get(`/returns/for-sale/${saleId}`).then(r => r.data);
+export const createReturn = (data) => api.post('/returns', data).then(r => r.data);
+
+export const getReturnsPage = ({ page = 0, size = 20, branchId } = {}) => {
+  const params = { page, size };
+  if (branchId) params.branchId = branchId;
+  return api.get('/returns/page', { params }).then(r => r.data);
 };
 
 export default api;

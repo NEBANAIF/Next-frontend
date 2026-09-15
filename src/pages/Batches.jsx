@@ -19,7 +19,7 @@ import {
   X, RefreshCw, CheckCircle, PackagePlus,
 } from 'lucide-react';
 import {
-  getProducts, getActiveBranches,
+  getProducts, getActiveBranches, getActiveSuppliers,
   getBatchesPage, receiveBatch, updateBatch, deleteBatch,
 } from '../services/api';
 
@@ -143,7 +143,7 @@ function IconBtn({ onClick, title, danger, children }) {
 function fmt(n) { return (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
 function emptyReceiveForm() {
-  return { productId: '', branchId: '', quantity: '', costPerUnit: '', batchNumber: '', receivedDate: '', expiryDate: '', supplier: '', notes: '' };
+  return { productId: '', branchId: '', quantity: '', costPerUnit: '', batchNumber: '', receivedDate: '', supplierId: '', notes: '' };
 }
 
 export default function Batches({ dark, user }) {
@@ -159,6 +159,7 @@ export default function Batches({ dark, user }) {
 
   const [products,      setProducts]      = useState([]);
   const [branches,    setBranches]    = useState([]);
+  const [suppliers,    setSuppliers]    = useState([]);
   const [rows,          setRows]          = useState([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages,    setTotalPages]    = useState(1);
@@ -172,15 +173,15 @@ export default function Batches({ dark, user }) {
   const [receiveForm,   setReceiveForm]   = useState(emptyReceiveForm());
   const [saving,        setSaving]        = useState(false);
   const [editTarget,    setEditTarget]    = useState(null);
-  const [editForm,      setEditForm]      = useState({ costPerUnit: '', batchNumber: '', expiryDate: '', supplier: '', notes: '' });
+  const [editForm,      setEditForm]      = useState({ costPerUnit: '', batchNumber: '', supplierId: '', notes: '' });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [successMsg,    setSuccessMsg]    = useState('');
 
   function showSuccess(msg) { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 3200); }
 
   useEffect(() => {
-    Promise.all([getProducts().catch(() => []), getActiveBranches().catch(() => [])])
-      .then(([p, w]) => { setProducts(p); setBranches(w); });
+    Promise.all([getProducts().catch(() => []), getActiveBranches().catch(() => []), getActiveSuppliers().catch(() => [])])
+      .then(([p, w, s]) => { setProducts(p); setBranches(w); setSuppliers(s); });
   }, []);
 
   async function load() {
@@ -217,8 +218,7 @@ export default function Batches({ dark, user }) {
         quantity: parseInt(quantity), costPerUnit: parseFloat(costPerUnit),
         batchNumber: receiveForm.batchNumber.trim() || null,
         receivedDate: receiveForm.receivedDate || null,
-        expiryDate: receiveForm.expiryDate || null,
-        supplier: receiveForm.supplier.trim() || null,
+        supplierId: receiveForm.supplierId ? parseInt(receiveForm.supplierId) : null,
         notes: receiveForm.notes.trim() || null,
         recordedBy: user?.name || 'Staff',
       });
@@ -233,7 +233,7 @@ export default function Batches({ dark, user }) {
     setEditTarget(b);
     setEditForm({
       costPerUnit: b.costPerUnit ?? '', batchNumber: b.batchNumber || '',
-      expiryDate: b.expiryDate || '', supplier: b.supplier || '', notes: b.notes || '',
+      supplierId: b.supplier?.id ?? '', notes: b.notes || '',
     });
   }
 
@@ -243,8 +243,7 @@ export default function Batches({ dark, user }) {
       await updateBatch(editTarget.id, {
         costPerUnit: editForm.costPerUnit === '' ? null : parseFloat(editForm.costPerUnit),
         batchNumber: editForm.batchNumber.trim() || null,
-        expiryDate: editForm.expiryDate || null,
-        supplier: editForm.supplier.trim() || null,
+        supplierId: editForm.supplierId ? parseInt(editForm.supplierId) : null,
         notes: editForm.notes.trim() || null,
       });
       setEditTarget(null);
@@ -426,15 +425,12 @@ export default function Batches({ dark, user }) {
                 <input type="date" value={receiveForm.receivedDate} onChange={e => setReceiveForm(f => ({ ...f, receivedDate: e.target.value }))} className="abk-input" />
               </div>
             </div>
-            <div className="abk-batch-modal-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-              <div>
-                <label className="abk-label">Expiry Date (optional)</label>
-                <input type="date" value={receiveForm.expiryDate} onChange={e => setReceiveForm(f => ({ ...f, expiryDate: e.target.value }))} className="abk-input" />
-              </div>
-              <div>
-                <label className="abk-label">Supplier (optional)</label>
-                <input value={receiveForm.supplier} onChange={e => setReceiveForm(f => ({ ...f, supplier: e.target.value }))} placeholder="Optional" className="abk-input" />
-              </div>
+            <div>
+              <label className="abk-label">Supplier (optional)</label>
+              <select value={receiveForm.supplierId} onChange={e => setReceiveForm(f => ({ ...f, supplierId: e.target.value }))} className="abk-input">
+                <option value="">No supplier</option>
+                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
             </div>
             <div>
               <label className="abk-label">Notes</label>
@@ -453,7 +449,7 @@ export default function Batches({ dark, user }) {
       {/* Edit modal */}
       {editTarget && (
         <Modal onClose={() => setEditTarget(null)} maxWidth={440}>
-          <ModalHeader title={`Edit Batch — ${editTarget.batchNumber || '#' + editTarget.id}`} subtitle="Only cost/notes/expiry can be corrected here" onClose={() => setEditTarget(null)} accent="var(--blue)" />
+          <ModalHeader title={`Edit Batch — ${editTarget.batchNumber || '#' + editTarget.id}`} subtitle="Only cost/notes/supplier can be corrected here" onClose={() => setEditTarget(null)} accent="var(--blue)" />
           <div style={{ padding:'1.2rem 1.4rem', display:'flex', flexDirection:'column', gap:14 }}>
             <div className="abk-batch-modal-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
               <div>
@@ -465,15 +461,12 @@ export default function Batches({ dark, user }) {
                 <input value={editForm.batchNumber} onChange={e => setEditForm(f => ({ ...f, batchNumber: e.target.value }))} className="abk-input" />
               </div>
             </div>
-            <div className="abk-batch-modal-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-              <div>
-                <label className="abk-label">Expiry Date</label>
-                <input type="date" value={editForm.expiryDate} onChange={e => setEditForm(f => ({ ...f, expiryDate: e.target.value }))} className="abk-input" />
-              </div>
-              <div>
-                <label className="abk-label">Supplier</label>
-                <input value={editForm.supplier} onChange={e => setEditForm(f => ({ ...f, supplier: e.target.value }))} className="abk-input" />
-              </div>
+            <div>
+              <label className="abk-label">Supplier</label>
+              <select value={editForm.supplierId} onChange={e => setEditForm(f => ({ ...f, supplierId: e.target.value }))} className="abk-input">
+                <option value="">No supplier</option>
+                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
             </div>
             <div>
               <label className="abk-label">Notes</label>

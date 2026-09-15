@@ -5,7 +5,7 @@ import {
   LineChart, Receipt, History, Shield,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getProducts, getSales, getAnalyticsDashboard, getActiveBranches } from '../services/api';
+import { getProducts, getSales, getAnalyticsDashboard, getActiveBranches, getActiveLocations } from '../services/api';
 import { localYMD } from '../utils/dateUtils';
 
 const GLOBAL_CSS = `
@@ -396,7 +396,6 @@ function GreetingSlider({ greeting, adminName, dark, slides, onRefresh, now, loc
 // dark : boolean — controlled from parent (App), no longer owned here
 export default function Dashboard({ dark, user }) {
   const { t, i18n } = useTranslation();
-  const isAdmin = (user?.role || '').toUpperCase() === 'ADMIN';
 
   const [products,       setProducts]       = useState([]);
   const [sales,          setSales]          = useState([]);
@@ -406,18 +405,23 @@ export default function Dashboard({ dark, user }) {
   const [todaySummary,   setTodaySummary]   = useState(null);
   const [allTimeSummary, setAllTimeSummary] = useState(null);
 
-  // ── Admin-only location filter: All / Store / Warehouse / one Branch ──
-  // Non-admin (scoped-role) users never see this — their view is already
-  // auto-restricted to their own branch(es) server-side, regardless of
-  // what's requested here.
-  const [branches,       setBranches]       = useState([]);
-  const [filterMode,     setFilterMode]     = useState('all'); // 'all' | 'STORE' | 'WAREHOUSE' | 'branch'
-  const [filterBranchId, setFilterBranchId] = useState('');
+  // ── Store/Warehouse/Branch filter — Admin sees every branch by default,
+  // but can narrow the whole dashboard down to one Location (Store or
+  // Warehouse) or one specific Branch within it. ────────────────────────
+  const [locations,        setLocations]        = useState([]);
+  const [branches,         setBranches]         = useState([]);
+  const [locationFilter,   setLocationFilter]   = useState('');
+  const [branchFilter,     setBranchFilter]     = useState('');
 
   useEffect(() => {
-    if (!isAdmin) return;
-    getActiveBranches().then(setBranches).catch(() => setBranches([]));
-  }, [isAdmin]);
+    Promise.all([getActiveLocations().catch(() => []), getActiveBranches().catch(() => [])])
+      .then(([locs, brs]) => { setLocations(locs); setBranches(brs); });
+  }, []);
+
+  // Branches shown in the picker — narrowed to the selected Location, if any.
+  const visibleBranches = locationFilter
+    ? branches.filter(b => String(b.location?.id) === String(locationFilter))
+    : branches;
 
   // Inject global CSS once
   useEffect(() => {
@@ -433,30 +437,22 @@ export default function Dashboard({ dark, user }) {
   }, []);
 
   useEffect(() => {
+    load();
     const timer = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(timer);
-  }, []);
-
-  // Reloads on mount, and again whenever the admin's location filter changes.
-  // No-op change for non-admins since filterMode/filterBranchId never move.
-  useEffect(() => {
-    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterMode, filterBranchId]);
+  }, [branchFilter]);
 
   async function load() {
     setLoading(true);
     try {
       const today = localYMD();
-      const filterParams = !isAdmin ? {}
-        : (filterMode === 'branch' && filterBranchId) ? { branchId: filterBranchId }
-        : (filterMode === 'STORE' || filterMode === 'WAREHOUSE') ? { locationType: filterMode }
-        : {};
+      const bId = branchFilter || undefined;
       const [p, s, todayAgg, allAgg] = await Promise.all([
         getProducts().catch(() => []),
-        getSales().catch(() => []),
-        getAnalyticsDashboard({ from: today, to: today, granularity: 'day',   includeSeries: false, ...filterParams }).catch(() => null),
-        getAnalyticsDashboard({ from: '2000-01-01', to: today, granularity: 'month', includeSeries: false, ...filterParams }).catch(() => null),
+        getSales(bId).catch(() => []),
+        getAnalyticsDashboard({ from: today, to: today, granularity: 'day',   includeSeries: false, branchId: bId }).catch(() => null),
+        getAnalyticsDashboard({ from: '2000-01-01', to: today, granularity: 'month', includeSeries: false, branchId: bId }).catch(() => null),
       ]);
       setProducts(p); setSales(s);
       setTodaySummary(todayAgg); setAllTimeSummary(allAgg);
@@ -566,47 +562,43 @@ export default function Dashboard({ dark, user }) {
           />
         </div>
 
-        {/* ── Admin location filter: All / Store / Warehouse / Branch ──── */}
-        {isAdmin && (
-          <div className="abk-anim-fade-up" style={{ display:'flex', gap:8, marginBottom:'1rem', flexWrap:'wrap', alignItems:'center' }}>
-            <span style={{ fontSize:10.5, fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--ink-light)' }}>
-              {i18n.language === 'am' ? 'አጣራ' : 'Filter'}
-            </span>
-            {[
-              { key: 'all',       label: i18n.language === 'am' ? 'ሁሉም' : 'All' },
-              { key: 'STORE',     label: i18n.language === 'am' ? 'ሱቆች' : 'Stores' },
-              { key: 'WAREHOUSE', label: i18n.language === 'am' ? 'መጋዘኖች' : 'Warehouses' },
-              { key: 'branch',    label: i18n.language === 'am' ? 'የተለየ ቅርንጫፍ' : 'Specific Branch' },
-            ].map(opt => (
-              <button
-                key={opt.key}
-                onClick={() => { setFilterMode(opt.key); if (opt.key !== 'branch') setFilterBranchId(''); }}
-                style={{
-                  padding: '6px 13px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                  border: '1px solid var(--border)', fontFamily: "'DM Sans', sans-serif",
-                  background: filterMode === opt.key ? 'var(--green)' : 'var(--card)',
-                  color: filterMode === opt.key ? '#fff' : 'var(--ink-mid)',
-                  transition: 'background .15s, color .15s',
-                }}
-              >{opt.label}</button>
-            ))}
-            {filterMode === 'branch' && (
-              <select
-                value={filterBranchId}
-                onChange={e => setFilterBranchId(e.target.value)}
-                className="abk-input"
-                style={{ maxWidth: 240 }}
-              >
-                <option value="">{i18n.language === 'am' ? 'ቅርንጫፍ ይምረጡ' : 'Select a branch'}</option>
-                {branches.map(b => (
-                  <option key={b.id} value={b.id}>
-                    {b.location?.name ? `${b.location.name} — ${b.name}` : b.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-        )}
+        {/* ── Store / Warehouse / Branch filter ───────────────────────────── */}
+        <div className="abk-anim-fade-in" style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:'1rem' }}>
+          <select
+            value={locationFilter}
+            onChange={e => { setLocationFilter(e.target.value); setBranchFilter(''); }}
+            style={{
+              padding:'8px 12px', borderRadius:10, border:'1px solid var(--border)',
+              background:'var(--card)', color:'var(--ink)', fontSize:12.5, fontWeight:500,
+              fontFamily:"'DM Sans',sans-serif", cursor:'pointer', maxWidth:220,
+            }}
+          >
+            <option value="">All Stores &amp; Warehouses</option>
+            {locations.map(l => <option key={l.id} value={l.id}>{l.name} ({l.type === 'STORE' ? 'Store' : 'Warehouse'})</option>)}
+          </select>
+          <select
+            value={branchFilter}
+            onChange={e => setBranchFilter(e.target.value)}
+            style={{
+              padding:'8px 12px', borderRadius:10, border:'1px solid var(--border)',
+              background:'var(--card)', color:'var(--ink)', fontSize:12.5, fontWeight:500,
+              fontFamily:"'DM Sans',sans-serif", cursor:'pointer', maxWidth:220,
+            }}
+          >
+            <option value="">{locationFilter ? 'All branches in this location' : 'All branches'}</option>
+            {visibleBranches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+          {(locationFilter || branchFilter) && (
+            <button
+              onClick={() => { setLocationFilter(''); setBranchFilter(''); }}
+              style={{
+                padding:'8px 14px', borderRadius:10, border:'1px solid var(--border)',
+                background:'var(--cream-deep)', color:'var(--ink-light)', fontSize:12.5, fontWeight:500,
+                fontFamily:"'DM Sans',sans-serif", cursor:'pointer',
+              }}
+            >Clear filter</button>
+          )}
+        </div>
 
         {/* ── KPI row ──────────────────────────────────────────────────── */}
         <div className="abk-dash-kpi-4" style={{ display:'grid', gridTemplateColumns:'repeat(4,minmax(0,1fr))', gap:10, marginBottom:'1.1rem' }}>

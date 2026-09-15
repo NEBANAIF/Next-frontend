@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Search, Plus, Edit2, Trash2, Package, AlertTriangle,
   XCircle, RefreshCw, ChevronLeft, ChevronRight, X, Save,
-  PackageMinus, PackagePlus, Filter, SlidersHorizontal,
+  PackageMinus, Filter, SlidersHorizontal,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -466,7 +466,7 @@ export default function Products({ dark, user }) {
   const [saving,        setSaving]        = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [stockModal,    setStockModal]    = useState(null);
-  const [stockMode,     setStockMode]     = useState('add');
+  const [stockMode]                       = useState('subtract'); // only correction (write-off) is done here now — additions go through Batches
   const [stockQty,      setStockQty]      = useState('');
   const [stockReason,   setStockReason]   = useState('');
   const [selectedRowId, setSelectedRowId] = useState(null); // highlighted (clicked) row, not an edit trigger
@@ -834,7 +834,7 @@ export default function Products({ dark, user }) {
                                   <Trash2 size={12} />
                                 </button>
                               )}
-                              <button onClick={() => { setStockModal(p); setStockMode('add'); setStockQty(''); setStockReason(''); }} className="abk-btn-icon" style={{ width:28, height:28, background:'var(--green-bg)', color:'var(--green)', border:'1px solid rgba(29,158,117,.25)' }} title={t('products.adjustStock')}>
+                              <button onClick={() => { setStockModal(p); setStockQty(''); setStockReason(''); }} className="abk-btn-icon" style={{ width:28, height:28, background:'var(--amber-bg)', color:'var(--amber)', border:'1px solid rgba(133,79,11,.25)' }} title="Correct stock (write-off / count correction)">
                                 <SlidersHorizontal size={12} />
                               </button>
                             </>
@@ -970,10 +970,10 @@ export default function Products({ dark, user }) {
         {stockModal && (
           <Modal onClose={() => setStockModal(null)} maxWidth={380}>
             <ModalHeader
-              title={stockMode === 'add' ? t('products.addStockLabel') : t('products.subtractStock')}
+              title={t('products.subtractStock', 'Correct Stock')}
               subtitle={stockModal.name}
               onClose={() => setStockModal(null)}
-              accent={stockMode === 'add' ? 'var(--green)' : 'var(--red-text)'}
+              accent="var(--red-text)"
             />
             <div style={{ padding:'1.1rem 1.4rem', display:'flex', flexDirection:'column', gap:12 }}>
 
@@ -983,23 +983,8 @@ export default function Products({ dark, user }) {
                 {t('products.quickAdjustHint', 'Quick correction — no branch or cost tracking. To receive stock into a specific branch at its own cost, use the Batches page.')}
               </div>
 
-              {/* Toggle */}
-              <div style={{ display:'flex', gap:6, padding:4, background:'var(--cream-deep)', borderRadius:11, border:'1px solid var(--border)' }}>
-                {[
-                  { mode:'add',      Icon:PackagePlus,  label:t('products.addStockLabel'), active:'var(--green)' },
-                  { mode:'subtract', Icon:PackageMinus, label:t('products.subtractStock'),  active:'var(--red-text)' },
-                ].map(btn => (
-                  <button key={btn.mode} onClick={() => setStockMode(btn.mode)} style={{
-                    flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:5,
-                    padding:'7px 0', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:500,
-                    background: stockMode === btn.mode ? btn.active : 'transparent',
-                    color: stockMode === btn.mode ? '#fff' : 'var(--ink-faint)',
-                    transition:'all .15s', fontFamily:'DM Sans,sans-serif',
-                  }}>
-                    <btn.Icon size={12} /> {btn.label}
-                  </button>
-                ))}
-              </div>
+              {/* Toggle removed — this quick action is write-off/correction only now.
+                  Adding stock always goes through the Batches page (branch + cost required). */}
 
               {/* Current stock chip */}
               <div style={{ background:'var(--blue-bg)', border:'1px solid rgba(24,95,165,.2)', borderRadius:10, padding:'10px 14px', display:'flex', justifyContent:'space-between' }}>
@@ -1041,11 +1026,9 @@ export default function Products({ dark, user }) {
               <BtnPrimary
                 onClick={handleAdjustStock}
                 disabled={previewStock !== null && previewStock < 0}
-                color={stockMode === 'add' ? 'var(--green)' : '#c53030'}
+                color="#c53030"
               >
-                {stockMode === 'add'
-                  ? <><PackagePlus size={13} /> {t('products.addStockLabel')}</>
-                  : <><PackageMinus size={13} /> {t('products.subtractStock')}</>}
+                <PackageMinus size={13} /> {t('products.subtractStock', 'Correct Stock')}
               </BtnPrimary>
             </ModalFooter>
           </Modal>

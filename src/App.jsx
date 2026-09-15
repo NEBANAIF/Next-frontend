@@ -43,14 +43,14 @@ const StockHistory = lazy(() => import('./pages/StockHistory'));
 const UserAccess   = lazy(() => import('./pages/UserAccess'));
 const Loans        = lazy(() => import('./pages/Loans'));
 const Payments     = lazy(() => import('./pages/Payments'));
-const Branches        = lazy(() => import('./pages/Branches'));
-const Batches         = lazy(() => import('./pages/Batches'));
-const Transfers       = lazy(() => import('./pages/Transfers'));
-const Customers       = lazy(() => import('./pages/Customers'));
-const Suppliers       = lazy(() => import('./pages/Suppliers'));
-const Purchases       = lazy(() => import('./pages/Purchases'));
-const PurchaseHistory = lazy(() => import('./pages/PurchaseHistory'));
-const Placeholder     = lazy(() => import('./pages/Placeholder'));
+const Branches     = lazy(() => import('./pages/Branches'));
+const Batches      = lazy(() => import('./pages/Batches'));
+const Transfers    = lazy(() => import('./pages/Transfers'));
+const Settings     = lazy(() => import('./pages/Settings'));
+const Customers    = lazy(() => import('./pages/Customers'));
+const Returns      = lazy(() => import('./pages/Returns'));
+const Suppliers    = lazy(() => import('./pages/Suppliers'));
+const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
 
 const BACKEND = import.meta.env.VITE_API_URL?.replace('/api', '') || 'https://ousman-backend.onrender.com';
 
@@ -60,17 +60,19 @@ const BACKEND = import.meta.env.VITE_API_URL?.replace('/api', '') || 'https://ou
  * Any other page key will be redirected to 'sales'.
  */
 const WORKER_ALLOWED_PAGES = [
-  'sales', 'products', 'loans', 'batches', 'transfers',
-  // ── New sidebar sections, branch-scoped operational pages ─────────────
-  'pos', 'customers', 'returns', 'categories', 'stock', 'suppliers', 'purchases', 'purchaseHistory',
+  'sales', 'pos', 'products', 'categories', 'stock', 'loans', 'customers', 'returns',
+  'batches', 'transfers', 'suppliers', 'purchases', 'settings',
 ];
 
-// The three location-scoped roles get everything WORKER gets, plus their
-// own branch's Dashboard and Stock History — unlike the legacy WORKER
-// role, which never had access to either. Reports/Users/Settings/etc.
-// stay ADMIN-only regardless.
-const SCOPED_ROLES = ['WAREHOUSE_MANAGER', 'STORE_MANAGER', 'STAFF'];
-const SCOPED_ALLOWED_PAGES = [...WORKER_ALLOWED_PAGES, 'dashboard', 'stockHistory'];
+/** Simple placeholder for a nav destination whose dedicated page isn't built yet. */
+function ComingSoon({ label }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', flexDirection: 'column', gap: 8 }}>
+      <div style={{ fontSize: 18, fontWeight: 500, color: '#3A5220' }}>{label}</div>
+      <div style={{ fontSize: 13, color: '#6A8A4A' }}>This page is coming soon.</div>
+    </div>
+  );
+}
 
 export default function App() {
   // ── Restore user from localStorage on first render ───────────────────
@@ -115,12 +117,12 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
-  // ── When user role changes, redirect workers to their allowed landing ──
+  // ── When user role changes, redirect non-admins to their allowed landing ──
   useEffect(() => {
     if (user) {
-      const isWorker = user.role?.toUpperCase() === 'WORKER';
-      if (isWorker) {
-        // Workers always start on and are redirected back to 'sales'
+      const nonAdmin = user.role?.toUpperCase() !== 'ADMIN';
+      if (nonAdmin) {
+        // Branch users always start on and are redirected back to 'sales'
         setCurrent('sales');
       }
     }
@@ -132,26 +134,25 @@ export default function App() {
    * them back to 'sales' instead.
    */
   function setCurrentGuarded(pageKey) {
-    const role = user?.role?.toUpperCase();
-    if (role === 'ADMIN') { setCurrent(pageKey); return; }
-    const allowed = SCOPED_ROLES.includes(role) ? SCOPED_ALLOWED_PAGES : WORKER_ALLOWED_PAGES;
-    if (!allowed.includes(pageKey)) {
-      setCurrent('sales'); // silently redirect
-      return;
+    if (user?.role?.toUpperCase() !== 'ADMIN') {
+      if (!WORKER_ALLOWED_PAGES.includes(pageKey)) {
+        setCurrent('sales'); // silently redirect
+        return;
+      }
     }
     setCurrent(pageKey);
   }
 
   // ── Login handler ─────────────────────────────────────────────────────
   function handleLogin(data) {
-    const u = { id: data.id, name: data.name, email: data.email, role: data.role };
+    const u = { id: data.id, name: data.name, email: data.email, role: data.role, branch: data.branch };
     setUser(u);
     localStorage.setItem('ousman_user', JSON.stringify(u));
     localStorage.setItem('ousman_token', data.token);
 
-    // Redirect workers to sales immediately after login
-    const isWorker = data.role?.toUpperCase() === 'WORKER';
-    setCurrent(isWorker ? 'sales' : 'dashboard');
+    // Redirect non-admins to sales immediately after login
+    const nonAdmin = data.role?.toUpperCase() !== 'ADMIN';
+    setCurrent(nonAdmin ? 'sales' : 'dashboard');
   }
 
   // ── Logout handler ────────────────────────────────────────────────────
@@ -166,7 +167,7 @@ export default function App() {
   // ── Not logged in → show Login page ──────────────────────────────────
   if (!user) return <Login onLogin={handleLogin} />;
 
-  const isWorker = user.role?.toUpperCase() === 'WORKER';
+  const isWorker = user.role?.toUpperCase() !== 'ADMIN'; // any non-admin, operational role
   const isAdmin  = user.role?.toUpperCase() === 'ADMIN';
 
   /**
@@ -176,43 +177,37 @@ export default function App() {
    * Workers only see 'products' and 'sales'.
    * Admin sees everything.
    */
-  const isScoped = SCOPED_ROLES.includes(user.role?.toUpperCase());
-
   const pages = {
-    // ── Every operational role — branch-scoped operational pages ─────────
+    // ── Every operational role ──────────────────────────────────────────
     products:  <Products  dark={dark} user={user} />,
     sales:     <Sales     dark={dark} user={user} />,
+    // POS reuses the Sales flow for now — a dedicated checkout screen is a future addition
+    pos:       <Sales     dark={dark} user={user} />,
     loans:     <Loans     dark={dark} user={user} />,
     batches:   <Batches   dark={dark} user={user} />,
     transfers: <Transfers dark={dark} user={user} />,
-
-    // ── New sidebar items awaiting a dedicated page — wired so nothing 404s ──
-    pos:             <Placeholder dark={dark} title="Point of Sale" description="A dedicated fast-checkout POS screen goes here — for now, use Sales to record transactions." />,
-    customers:       <Customers   dark={dark} user={user} />,
-    returns:         <Placeholder dark={dark} title="Returns" description="Record and track product returns per branch, crediting the exact batch(es) the returned units came from." />,
-    categories:      <Placeholder dark={dark} title="Categories" description="Manage the category list each branch's products are organized under." />,
-    stock:           <Placeholder dark={dark} title="Stock" description="Live per-branch stock levels computed from batch quantity-remaining, with low-stock flags." />,
-    suppliers:       <Suppliers   dark={dark} user={user} />,
-    purchases:       <Purchases   dark={dark} user={user} />,
-    purchaseHistory: <PurchaseHistory dark={dark} user={user} />,
-
-    // ── ADMIN + the three location-scoped roles (own-branch view) ────────
-    ...((isAdmin || isScoped) && {
-      dashboard:    <Dashboard    dark={dark} user={user} />,
-      stockHistory: <StockHistory dark={dark} user={user} />,
-    }),
+    // Current stock-per-product view — reuses Products until a dedicated Stock page exists
+    stock:     <Products  dark={dark} user={user} />,
+    // Category browsing already lives inside Products
+    categories: <Products dark={dark} user={user} />,
+    settings:  <Settings  dark={dark} onDarkToggle={() => setDark(d => !d)} user={user} />,
+    customers: <Customers dark={dark} user={user} />,
+    returns:   <Returns   dark={dark} user={user} />,
+    suppliers: <Suppliers dark={dark} user={user} />,
+    purchases: <PurchaseOrders dark={dark} user={user} />,
 
     // ── Admin only ──────────────────────────────────────────────────────
     ...(isAdmin && {
-      finance:          <Finance      dark={dark} user={user} />,
-      analytics:        <Analytics    dark={dark} user={user} />,
-      users:            <UserAccess   dark={dark} user={user} />,
-      payments:         <Payments     dark={dark} user={user} />,
-      branches:         <Branches     dark={dark} user={user} />,
-      salesReports:     <Placeholder dark={dark} title="Sales Reports" description="Company-wide and per-branch sales reporting with Store/Warehouse/Branch filters." />,
-      inventoryReports: <Placeholder dark={dark} title="Inventory Reports" description="Stock valuation, aging, and movement reports across all branches." />,
-      roles:            <Placeholder dark={dark} title="Roles & Permissions" description="Define what each role (Admin, Warehouse Manager, Store Manager, Staff) can see and do." />,
-      settings:         <Placeholder dark={dark} title="Settings" description="Company profile, preferences, and system configuration." />,
+      dashboard:    <Dashboard    dark={dark} user={user} />,
+      finance:      <Finance      dark={dark} user={user} />,
+      analytics:    <Analytics    dark={dark} user={user} />,
+      salesReports: <Analytics    dark={dark} user={user} />,
+      inventoryReports: <Analytics dark={dark} user={user} />,
+      stockhistory: <StockHistory dark={dark} user={user} />,
+      users:        <UserAccess   dark={dark} user={user} />,
+      roles:        <UserAccess   dark={dark} user={user} initialTab="roles" />,
+      payments:     <Payments     dark={dark} user={user} />,
+      branches:     <Branches     dark={dark} user={user} />,
     }),
   };
 
